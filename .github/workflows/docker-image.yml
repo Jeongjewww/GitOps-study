@@ -67,6 +67,6 @@ jobs:
         with:
           source-directory: '.'
           destination-github-username: 'ziwooda'
-          destination-repository-name: 'GitOps-Study'
+          destination-repository-name: 'GitOps-Study-Manifest'
           commit-message: Update image tag to version; ${{ steps.meta.outputs.version }}
           target-branch: main
