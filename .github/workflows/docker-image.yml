@@ -2,9 +2,9 @@ name: GitHub Action for Slackbot
 
 on:
   push:
-    branches: ["main", "ziwoo"]
+    branches: ["main"]
   pull_request:
-    branches: ["main", "ziwoo"]
+    branches: ["ziwoo"]
   workflow_dispatch:
 
 env:
@@ -37,7 +37,8 @@ jobs:
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: ${{ github.GITHUB_SHA }}
+          tags: |
+            type=sha
 
       - name: Build and push
         uses: docker/build-push-action@v3
@@ -46,3 +47,26 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      
+      - name: Read Manifest Repo
+        uses: actions/checkout@v3
+        with:
+          repository: ziwooda/GitOps-Study-Manifest
+          ref: main
+          token: ${{ secrets.GH_PAT }}
+    
+      - name: Change env values of cronjob manifest
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.spec.jobTemplate.spec.template.spec.containers[0].image = "${{ steps.meta.outputs.tags }}"' birthbot-cronjob.yaml
+      
+      - name: Push outputs to manifest repo
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.GH_PAT }}
+        with:
+          source-directory: '.'
+          destination-github-username: 'ziwooda'
+          destination-repository-name: 'GitOps-Study'
+          commit-message: Update image tag to version; ${{ steps.meta.outputs.version }}
+          target-branch: main
